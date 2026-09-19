@@ -1,0 +1,466 @@
+{% extends "base.html" %}
+
+{% block title %}MyEstia - Productivity Dashboard & Task Manager{% endblock %}
+
+{% block content %}
+<!-- =========================================================
+     1. DASHBOARD VIEW
+     ========================================================= -->
+<div class="view-container active" id="view-dashboard">
+  <div class="view-header">
+    <div class="view-header-title">
+      <h1 id="dash-greeting">Welcome to MyEstia</h1>
+      <p id="dash-date-text">Track your tasks, focus on priorities, and never miss a reminder.</p>
+    </div>
+    <div>
+      <button class="btn-primary" id="dash-btn-new-task">
+        <i class="fa-solid fa-plus"></i> New Task
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metric Cards Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card info">
+      <div class="kpi-info">
+        <h3>Total Tasks</h3>
+        <div class="kpi-value" id="kpi-total">0</div>
+      </div>
+      <div class="kpi-icon-box">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+    </div>
+
+    <div class="kpi-card success">
+      <div class="kpi-info">
+        <h3>Completed</h3>
+        <div class="kpi-value" id="kpi-completed">0</div>
+      </div>
+      <div class="kpi-icon-box">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+    </div>
+
+    <div class="kpi-card warning">
+      <div class="kpi-info">
+        <h3>Pending Tasks</h3>
+        <div class="kpi-value" id="kpi-pending">0</div>
+      </div>
+      <div class="kpi-icon-box">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-info">
+        <h3>Due Today</h3>
+        <div class="kpi-value" id="kpi-due-today">0</div>
+      </div>
+      <div class="kpi-icon-box">
+        <i class="fa-solid fa-calendar-day"></i>
+      </div>
+    </div>
+
+    <div class="kpi-card urgent">
+      <div class="kpi-info">
+        <h3>Overdue</h3>
+        <div class="kpi-value" id="kpi-overdue">0</div>
+      </div>
+      <div class="kpi-icon-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+    </div>
+
+    <div class="kpi-card success">
+      <div class="kpi-info">
+        <h3>Completion Rate</h3>
+        <div class="kpi-value" id="kpi-rate">0%</div>
+      </div>
+      <div class="kpi-icon-box">
+        <i class="fa-solid fa-chart-pie"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Main Grid -->
+  <div class="dashboard-grid">
+    <!-- Left Column: Today's Focus & Activity Trend -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <!-- Today's Focus Card -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div class="dash-card-title">
+            <i class="fa-solid fa-fire-flame-curved" style="color: var(--priority-high);"></i>
+            <span>Today's Focus & Urgent Priorities</span>
+          </div>
+          <button class="btn-secondary" id="dash-btn-view-all-tasks" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+            View All <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i>
+          </button>
+        </div>
+        <div class="tasks-list" id="dash-focus-list">
+          <!-- Populated by dashboard.js -->
+        </div>
+      </div>
+
+      <!-- Weekly Productivity Chart Card -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div class="dash-card-title">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>7-Day Productivity Velocity</span>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-subtle);">Tasks Completed vs Created</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="chart-weekly-activity"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Distribution Charts -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <!-- Priority Breakdown Card -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div class="dash-card-title">
+            <i class="fa-solid fa-flag"></i>
+            <span>Priority Distribution</span>
+          </div>
+        </div>
+        <div class="chart-wrapper" style="height: 220px;">
+          <canvas id="chart-priority-dist"></canvas>
+        </div>
+      </div>
+
+      <!-- Category Donut Card -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div class="dash-card-title">
+            <i class="fa-solid fa-tags"></i>
+            <span>Category Breakdown</span>
+          </div>
+        </div>
+        <div class="chart-wrapper" style="height: 220px;">
+          <canvas id="chart-category-dist"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     2. ALL TASKS VIEW
+     ========================================================= -->
+<div class="view-container" id="view-tasks">
+  <div class="view-header">
+    <div class="view-header-title">
+      <h1>Task Management</h1>
+      <p>Organize, schedule, prioritize, and check off your personal responsibilities.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <button class="btn-secondary" id="btn-batch-mode" title="Select multiple tasks">
+        <i class="fa-solid fa-list-check"></i> Batch Mode
+      </button>
+      <button class="btn-primary" id="tasks-btn-new-task">
+        <i class="fa-solid fa-plus"></i> Add New Task
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick Add Bar -->
+  <div class="quick-add-bar">
+    <i class="fa-solid fa-plus" style="color: var(--primary-400); margin-left: 0.5rem;"></i>
+    <input type="text" id="quick-add-input" class="quick-add-input" placeholder="Type a task and press Enter to quickly add...">
+    <button class="btn-primary" id="btn-quick-add" style="padding: 0.45rem 1rem; font-size: 0.85rem;">Add</button>
+  </div>
+
+  <!-- Category Filter Chips Bar -->
+  <div class="category-chips-bar" id="tasks-category-chips">
+    <div class="category-chip active" data-cat-id="">
+      <i class="fa-solid fa-border-all"></i> All Categories
+    </div>
+    <!-- Populated by tasks.js / categories.js -->
+  </div>
+
+  <!-- Task Filters & Search Toolbar -->
+  <div class="task-toolbar">
+    <!-- Status Filter Pills -->
+    <div class="filter-group" id="tasks-status-filters">
+      <button class="filter-pill active" data-due-filter="all">All</button>
+      <button class="filter-pill" data-due-filter="pending">Pending</button>
+      <button class="filter-pill" data-due-filter="completed">Completed</button>
+      <button class="filter-pill" data-due-filter="today">Today</button>
+      <button class="filter-pill" data-due-filter="upcoming">Upcoming</button>
+      <button class="filter-pill" data-due-filter="overdue">Overdue</button>
+    </div>
+
+    <!-- Dropdown Select Filters & Sorting -->
+    <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+      <select class="select-filter" id="filter-select-priority">
+        <option value="">All Priorities</option>
+        <option value="urgent">🔴 Urgent</option>
+        <option value="high">🟠 High</option>
+        <option value="medium">🔵 Medium</option>
+        <option value="low">⚪ Low</option>
+      </select>
+
+      <select class="select-filter" id="filter-select-sort">
+        <option value="due_date-asc">Due Date (Earliest)</option>
+        <option value="due_date-desc">Due Date (Latest)</option>
+        <option value="priority-desc">Priority (Highest)</option>
+        <option value="created-desc">Date Created (Newest)</option>
+        <option value="title-asc">Alphabetical (A-Z)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Batch Actions Bar (Hidden by default) -->
+  <div id="batch-actions-bar" style="display: none; background: rgba(99, 102, 241, 0.15); border: 1px solid var(--primary-500); border-radius: var(--radius-md); padding: 0.65rem 1rem; margin-bottom: 1rem; justify-content: space-between; align-items: center;">
+    <div style="font-size: 0.88rem; font-weight: 600;">
+      <span id="batch-selected-count">0</span> task(s) selected
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <button class="btn-secondary" id="btn-batch-complete" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+        <i class="fa-solid fa-check"></i> Mark Completed
+      </button>
+      <button class="btn-secondary" id="btn-batch-incomplete" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+        <i class="fa-solid fa-clock"></i> Mark Pending
+      </button>
+      <button class="btn-secondary" id="btn-batch-delete" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; color: var(--priority-urgent);">
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
+      <button class="btn-secondary" id="btn-batch-cancel" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Tasks List Container -->
+  <div class="tasks-list" id="tasks-main-list">
+    <!-- Populated by tasks.js -->
+  </div>
+</div>
+
+<!-- =========================================================
+     3. WORKFLOW VIEW (To Do -> In Progress -> Completed)
+     ========================================================= -->
+<div class="view-container" id="view-workflow">
+  <div class="view-header">
+    <div class="view-header-title">
+      <h1>Task Workflow</h1>
+      <p>Track task execution across sequential stages: To Do → In Progress → Completed.</p>
+    </div>
+    <div>
+      <button class="btn-primary" id="workflow-btn-new-task">
+        <i class="fa-solid fa-plus"></i> Add Task
+      </button>
+    </div>
+  </div>
+
+  <!-- Workflow Pipeline Visual Stepper -->
+  <div class="workflow-pipeline">
+    <div class="workflow-step todo">
+      <div class="workflow-step-icon">
+        <i class="fa-solid fa-hourglass-start"></i>
+      </div>
+      <div class="workflow-step-info">
+        <h4>1. To Do</h4>
+        <span id="workflow-count-todo">0 tasks</span>
+      </div>
+    </div>
+
+    <div class="workflow-connector">
+      <i class="fa-solid fa-arrow-right"></i>
+    </div>
+
+    <div class="workflow-step inprogress">
+      <div class="workflow-step-icon">
+        <i class="fa-solid fa-spinner fa-spin-pulse"></i>
+      </div>
+      <div class="workflow-step-info">
+        <h4>2. In Progress</h4>
+        <span id="workflow-count-inprogress">0 tasks</span>
+      </div>
+    </div>
+
+    <div class="workflow-connector">
+      <i class="fa-solid fa-arrow-right"></i>
+    </div>
+
+    <div class="workflow-step completed">
+      <div class="workflow-step-icon">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div class="workflow-step-info">
+        <h4>3. Completed</h4>
+        <span id="workflow-count-completed">0 tasks</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sequential Workflow Stage Lists -->
+  <div class="workflow-sections">
+    <!-- Stage 1: To Do -->
+    <div class="workflow-stage-card">
+      <div class="workflow-stage-header">
+        <div class="workflow-stage-title">
+          <span style="width: 12px; height: 12px; border-radius: var(--radius-full); background: var(--accent-amber);"></span>
+          <span>Stage 1: To Do</span>
+        </div>
+        <span class="workflow-stage-badge" id="workflow-badge-todo">0 Tasks</span>
+      </div>
+      <div class="workflow-tasks-grid" id="workflow-list-todo">
+        <!-- Populated by tasks.js -->
+      </div>
+    </div>
+
+    <!-- Stage 2: In Progress -->
+    <div class="workflow-stage-card">
+      <div class="workflow-stage-header">
+        <div class="workflow-stage-title">
+          <span style="width: 12px; height: 12px; border-radius: var(--radius-full); background: var(--accent-cyan);"></span>
+          <span>Stage 2: In Progress</span>
+        </div>
+        <span class="workflow-stage-badge" id="workflow-badge-inprogress">0 Tasks</span>
+      </div>
+      <div class="workflow-tasks-grid" id="workflow-list-inprogress">
+        <!-- Populated by tasks.js -->
+      </div>
+    </div>
+
+    <!-- Stage 3: Completed -->
+    <div class="workflow-stage-card">
+      <div class="workflow-stage-header">
+        <div class="workflow-stage-title">
+          <span style="width: 12px; height: 12px; border-radius: var(--radius-full); background: var(--accent-emerald);"></span>
+          <span>Stage 3: Completed</span>
+        </div>
+        <span class="workflow-stage-badge" id="workflow-badge-completed">0 Tasks</span>
+      </div>
+      <div class="workflow-tasks-grid" id="workflow-list-completed">
+        <!-- Populated by tasks.js -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     4. CALENDAR VIEW
+     ========================================================= -->
+<div class="view-container" id="view-calendar">
+  <div class="view-header">
+    <div class="view-header-title">
+      <h1>Calendar Timeline</h1>
+      <p>View your scheduled tasks and deadlines by day, week, and month.</p>
+    </div>
+    <div>
+      <button class="btn-primary" id="cal-btn-new-task">
+        <i class="fa-solid fa-plus"></i> Schedule Task
+      </button>
+    </div>
+  </div>
+
+  <div class="calendar-wrapper">
+    <div class="calendar-header">
+      <div class="calendar-nav">
+        <button class="btn-secondary" id="cal-btn-prev"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="btn-secondary" id="cal-btn-today">Today</button>
+        <button class="btn-secondary" id="cal-btn-next"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <div class="calendar-month-title" id="cal-month-title">September 2026</div>
+      <div></div>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="calendar-grid" id="calendar-grid">
+      <!-- Populated by calendar.js -->
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     5. CATEGORIES MANAGER VIEW
+     ========================================================= -->
+<div class="view-container" id="view-categories">
+  <div class="view-header">
+    <div class="view-header-title">
+      <h1>Category Management</h1>
+      <p>Edit, customize, or remove suggested categories, or create your own custom tags.</p>
+    </div>
+    <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+      <button class="btn-secondary" id="categories-btn-restore-defaults" title="Restore suggested default categories">
+        <i class="fa-solid fa-rotate-left"></i> Restore Suggested
+      </button>
+      <button class="btn-secondary" id="categories-btn-remove-all" style="color: var(--priority-urgent);" title="Remove all categories (keep all tasks)">
+        <i class="fa-solid fa-trash-can"></i> Remove All
+      </button>
+      <button class="btn-primary" id="categories-btn-new">
+        <i class="fa-solid fa-plus"></i> Create Category
+      </button>
+    </div>
+  </div>
+
+  <!-- Categories Cards Grid -->
+  <div class="categories-grid" id="categories-main-grid">
+    <!-- Populated by categories.js -->
+  </div>
+</div>
+
+<!-- =========================================================
+     6. ANALYTICS & REPORTS VIEW
+     ========================================================= -->
+<div class="view-container" id="view-analytics">
+  <div class="view-header">
+    <div class="view-header-title">
+      <h1>Analytics & Insights</h1>
+      <p>Deep productivity breakdown, completion trends, and task distribution.</p>
+    </div>
+    <div>
+      <button class="btn-secondary" id="analytics-btn-export">
+        <i class="fa-solid fa-download"></i> Export Report
+      </button>
+    </div>
+  </div>
+
+  <div class="charts-row" style="margin-bottom: 1.75rem;">
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <div class="dash-card-title"><i class="fa-solid fa-chart-area"></i> Productivity Velocity</div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="chart-analytics-velocity"></canvas>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <div class="dash-card-title"><i class="fa-solid fa-pie-chart"></i> Category Completion Rates</div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="chart-analytics-categories"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Breakdown Table -->
+  <div class="dash-card">
+    <div class="dash-card-header">
+      <div class="dash-card-title"><i class="fa-solid fa-table-list"></i> Category Performance Matrix</div>
+    </div>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;" id="analytics-table">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+            <th style="padding: 0.75rem 1rem;">Category</th>
+            <th style="padding: 0.75rem 1rem;">Total Tasks</th>
+            <th style="padding: 0.75rem 1rem;">Active</th>
+            <th style="padding: 0.75rem 1rem;">Completed</th>
+            <th style="padding: 0.75rem 1rem;">Progress</th>
+          </tr>
+        </thead>
+        <tbody id="analytics-table-body">
+          <!-- Populated dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - MyEstia Personal Task & Reminder System</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="auth-page-container">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-stopwatch"></i>
+        </div>
+        <h2>Join MyEstia</h2>
+        <p>Create your personal task and reminder account</p>
+      </div>
+
+      <form id="register-form">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="reg-fullname">Full Name *</label>
+          <input type="text" id="reg-fullname" class="form-input" placeholder="e.g., Alex Morgan" required autofocus>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="reg-username">Username *</label>
+          <input type="text" id="reg-username" class="form-input" placeholder="e.g., alexmorgan" required minlength="3">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="reg-email">Email Address *</label>
+          <input type="email" id="reg-email" class="form-input" placeholder="alex@example.com" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label class="form-label" for="reg-password">Password (min 6 chars) *</label>
+          <input type="password" id="reg-password" class="form-input" placeholder="••••••••" required minlength="6">
+        </div>
+
+        <button type="submit" class="btn-primary auth-btn-block" id="btn-submit-register">
+          <i class="fa-solid fa-user-plus"></i> Create Account
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="{{ url_for('login_page') }}" style="font-weight: 600;">Sign in here</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+  <script>
+    const form = document.getElementById('register-form');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const full_name = document.getElementById('reg-fullname').value.trim();
+      const username = document.getElementById('reg-username').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const submitBtn = document.getElementById('btn-submit-register');
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating Account...';
+
+      try {
+        const res = await API.auth.register(full_name, username, email, password);
+        if (res.success) {
+          API.showToast('Account created successfully! Welcome to MyEstia.', 'success');
+          setTimeout(() => {
+            window.location.href = "{{ url_for('index_page') }}";
+          }, 400);
+        } else {
+          API.showToast(res.message || 'Registration failed', 'error');
+        }
+      } catch (err) {
+        API.showToast(err.message || 'Error occurred during registration', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Account';
+      }
+    });
+  </script>
+</body>
+</html>
